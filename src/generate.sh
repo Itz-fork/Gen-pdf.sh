@@ -22,7 +22,8 @@ RESET="\033[0m"
 while [[ $# -gt 0 ]]; do
     case "${1}" in
         -d|--dir)
-            fname="$2"
+            fpath="$2"
+            fname=$(basename "$2")
             shift
             shift
             ;;
@@ -57,7 +58,7 @@ create_tmp_dir() {
 
 get_subfolders() {
     echo -e "${WHITE}> Scanning for chapter folders...${RESET}"
-    folders=$(find "$fname"/ -maxdepth 1 -mindepth 1 -type d | sort -nk1.8)
+    folders=$(find "$fpath"/ -maxdepth 1 -mindepth 1 -type d | sort -nk1.8)
     folders_count=$(echo "$folders" | wc -l)
     echo -e "   ${YELLOW}[!] Found $folders_count sub-folders inside $fname${RESET}\n"
 }
@@ -82,8 +83,9 @@ main() {
     # Show heading
     echo -e "${CYAN_BACK}Gen-pdf.sh - ${Version}${RESET}"
     # Get the folder name if not passed
-    if [ -z ${fname+x} ]; then
-        read -p -e "${WHITE}> Enter the folder name: ${RESET}" fname
+    if [ -z ${fpath+x} ]; then
+        read -p -e "${WHITE}> Enter the folder name: ${RESET}" fpath
+        fname=$(basename "$fpath")
     fi
     # Create tmp dir
     create_tmp_dir
