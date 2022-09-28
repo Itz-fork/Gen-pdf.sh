@@ -5,7 +5,7 @@
 
 
 # ----------------- Script version -----------------#
-Version="v0.2"
+Version="v0.3"
 
 
 # ------------------ Colors codes ------------------#
@@ -91,21 +91,26 @@ create_tmp_dir() {
 }
 
 get_subfolders() {
-    show_process "> Scanning for chapter folders..."
+    show_process "> Scanning for sub-folders..."
     
     folders=$(find "$fpath"/ -maxdepth 1 -mindepth 1 -type d | sort -nk1.8)
-    folders_count=$(echo "$folders" | wc -l)
+    folders_count=$(printf %s "$folders" | wc -l)
     show_info "Found $folders_count sub-folders inside $fname\n"
 }
 
 generate_pdfs() {
     show_process "> Generating pdfs"
-    for i in $folders; do
-        local pdfname
-        pdfname=$(basename "$i")
-        echo -e "  ${GREEN}[+]${RESET} Generating pdf for $pdfname"
-        convert "$i/*.jpg" "$chtmp/$pdfname.pdf"
-    done
+    if [[ $folders_count != "0" ]]; then
+        for i in $folders; do
+            local pdfname
+            pdfname=$(basename "$i")
+            echo -e "  ${GREEN}[+]${RESET} Generating pdf for $pdfname"
+            convert "$i/*.jpg" "$chtmp/$pdfname.pdf"
+        done
+    else
+        echo -e "  ${GREEN}[+]${RESET} Generating pdf for $fname"
+        convert "$fpath/*.jpg" "$chtmp/$fname.pdf"
+    fi
 }
 
 merge_pdf() {
