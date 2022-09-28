@@ -5,16 +5,17 @@
 
 
 # ----------------- Script version -----------------#
-Version="v0.1"
+Version="v0.2"
 
 
 # ------------------ Colors codes ------------------#
 WHITE="\033[1;37m"
+BLACK="\033[1;30m"
 YELLOW="\033[1;93m"
 GREEN="\033[1;92m"
 RED="\033[1;31m"
 CYAN_BACK="\033[1;46m"
-GREEN_BACK="\033[1;102m"
+GREEN_BACK="\033[1;42m"
 RESET="\033[0m"
 
 
@@ -27,65 +28,106 @@ while [[ $# -gt 0 ]]; do
             shift
             shift
             ;;
+        -o|--out)
+            out_dir="$2"
+            shift
+            shift
+            ;;
         -m|--merge)
             merge="true"
             shift
             ;;
+        *)
+            echo -e "${WHITE}
+Usage:
+    bash generate.sh
+
+Arguments:
+    -d|--dir - Path to the folder that contains images
+    -o|--out - Output directory
+    -m|--merge - Merge generated pdfs into one
+${RESET}"
+            exit 1
     esac
 done
 
 
 #-------------------- Functions --------------------#
+show_process() {
+    echo -e "${WHITE}$1${RESET}"
+}
+
+show_info() {
+    echo -e "  ${YELLOW}[!] $1${RESET}"
+}
+
+throw_error() {
+    echo -e "   ${RED}[WARNING!] $1${RESET}"
+    exit 1
+}
+
 check_dependencies() {
     declare -a depends=("convert" "pdftools")
     for pack in "${depends[@]}"; do
         CHCK=$(command -v "$pack" &> /dev/null)
         if ! $CHCK; then
-            echo -e "   ${RED}[WARNING!] Package $pack not found!${RESET}"
-            exit 1
+            throw_error "Package $pack not found!"
         fi
     done
 }
 
 create_tmp_dir() {
-    chtmp="$fname-generated"
+    if [[ $current_dir != "$out_dir" ]]; then
+        mkdir -p "$out_dir"
+        chtmp="$out_dir/$fname-generated"
+    else
+        chtmp="$fname-generated"
+    fi
     if [ -d "$chtmp" ]; then
-        echo -e "  ${YELLOW}[!] Removing existing pdfs in $chtmp!${RESET}"
+        show_info "Removing existing pdfs in $chtmp!"
         rm -rf "$chtmp"
     fi
     mkdir "$chtmp"
 }
 
 get_subfolders() {
-    echo -e "${WHITE}> Scanning for chapter folders...${RESET}"
+    show_process "> Scanning for chapter folders..."
+    
     folders=$(find "$fpath"/ -maxdepth 1 -mindepth 1 -type d | sort -nk1.8)
     folders_count=$(echo "$folders" | wc -l)
-    echo -e "   ${YELLOW}[!] Found $folders_count sub-folders inside $fname${RESET}\n"
+    show_info "Found $folders_count sub-folders inside $fname\n"
 }
 
 generate_pdfs() {
+    show_process "> Generating pdfs"
     for i in $folders; do
-        IFS='/'
-        read -a chstr <<< "$i"
-        echo -e "  ${GREEN}[+]${RESET} Generating pdf for ${chstr[1]}"
-        convert "$i/*.jpg" "$chtmp/${chstr[1]}.pdf"
+        local pdfname
+        pdfname=$(basename "$i")
+        echo -e "  ${GREEN}[+]${RESET} Generating pdf for $pdfname"
+        convert "$i/*.jpg" "$chtmp/$pdfname.pdf"
     done
 }
 
 merge_pdf() {
-    echo -e "\n${WHITE}> Merging chapters into single pdf...${RESET}"
-	pdftools merge -o "$fname.pdf" "$chtmp"/*.pdf
+    show_process "\n> Merging $folders_count pdfs into single pdf..."
+	pdftools merge -o "$out_dir/$fname.pdf" "$chtmp"/*.pdf
 }
 
 main() {
     # Check if the required packages are installed
     check_dependencies
     # Show heading
-    echo -e "${CYAN_BACK}Gen-pdf.sh - ${Version}${RESET}"
+    echo -e "${CYAN_BACK}${BLACK}Gen-pdf.sh - ${Version}${RESET}\n\n"
     # Get the folder name if not passed
     if [ -z ${fpath+x} ]; then
-        read -p -e "${WHITE}> Enter the folder name: ${RESET}" fpath
+        echo -n -e "${WHITE}> Enter the folder name: ${RESET}"
+        read fpath
         fname=$(basename "$fpath")
+    fi
+    # Set up output directory
+    current_dir=$(pwd)
+    if [ -z ${out_dir+x} ]; then
+        out_dir=$(pwd)
     fi
     # Create tmp dir
     create_tmp_dir
