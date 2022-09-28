@@ -2,7 +2,7 @@
 Simple bash script to generate pdf file(s) from images inside a folder in linux
 
 
-# Download
+## Download
 [![Download it](https://img.shields.io/badge/Download%20it!-5FC264?style=for-the-badge&logo=download&logoColor=white)](https://raw.githubusercontent.com/Itz-fork/Gen-pdf.sh/main/src/generate.sh)
 
 
